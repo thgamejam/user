@@ -2,6 +2,7 @@ package biz
 
 import (
 	"context"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
 )
 
@@ -10,9 +11,18 @@ var ProviderSet = wire.NewSet(NewUserUseCase)
 
 // UserRepo is a User repo.
 type UserRepo interface {
-	Save(context.Context, *User) (*User, error)
-	Update(context.Context, *User) (*User, error)
-	FindByID(context.Context, int64) (*User, error)
-	ListByHello(context.Context, string) ([]*User, error)
-	ListAll(context.Context) ([]*User, error)
+	// GetUserByAccountID 通过账户ID获取用户
+	GetUserByAccountID(ctx context.Context, accountID uint32) (user *UserInfo, err error)
+	//CreateUser 创建用户
+	CreateUser(ctx context.Context, accountID uint32) (user *UserInfo, err error)
+}
+
+type UserUseCase struct {
+	repo UserRepo
+	log  *log.Helper
+}
+
+// NewUserUseCase new a User use case.
+func NewUserUseCase(repo UserRepo, logger log.Logger) *UserUseCase {
+	return &UserUseCase{repo: repo, log: log.NewHelper(logger)}
 }

@@ -1,34 +1,21 @@
 package biz
 
-import (
-	"context"
+import "context"
 
-	"github.com/go-kratos/kratos/v2/log"
-)
-
-var (
-// ErrUserNotFound is user not found.
-// ErrUserNotFound = errors.NotFound(v1.ErrorReason_USER_NOT_FOUND.String(), "user not found")
-)
-
-// User is a User model.
-type User struct {
-	Hello string
+type UserInfo struct {
+	Name      string
+	AvatarUrl string
+	WorkCount uint32
+	FansCount uint32
+	Tags      []string
 }
 
-// UserUseCase is a User use case.
-type UserUseCase struct {
-	repo UserRepo
-	log  *log.Helper
+// GetUserByAccountID 通过账户ID获取用户信息
+func (uc *UserUseCase) GetUserByAccountID(ctx context.Context, accountID uint32) (*UserInfo, error) {
+	return uc.repo.GetUserByAccountID(ctx, accountID)
 }
 
-// NewUserUseCase new a User use case.
-func NewUserUseCase(repo UserRepo, logger log.Logger) *UserUseCase {
-	return &UserUseCase{repo: repo, log: log.NewHelper(logger)}
-}
-
-// CreateUser creates a User, and returns the new User.
-func (uc *UserUseCase) CreateUser(ctx context.Context, g *User) (*User, error) {
-	uc.log.WithContext(ctx).Infof("CreateUser: %v", g.Hello)
-	return uc.repo.Save(ctx, g)
+// CreateUser 根据账户ID创建用户
+func (uc *UserUseCase) CreateUser(ctx context.Context, accountID uint32) (userInfo *UserInfo, err error) {
+	return uc.repo.CreateUser(ctx, accountID)
 }

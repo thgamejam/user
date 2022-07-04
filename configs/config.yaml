@@ -1,9 +1,9 @@
 server:
   http:
-    addr: 0.0.0.0:8000
+    addr: 0.0.0.0:8002
     timeout: 1s
   grpc:
-    addr: 0.0.0.0:9000
+    addr: 0.0.0.0:9002
     timeout: 1s
 
 data:
@@ -19,6 +19,14 @@ data:
     password: ""
     read_timeout: 0.2s
     write_timeout: 0.2s
+  objectStorage:
+    domain: localhost:9000
+    access_key_id: minioadmin
+    secret_access_key: minioadmin
+    location: cn-north-1
+    secure: false
+    token: ""
 
 user:
-  value: "value"
+  default_user_avatar_hash: "value"
+  user_avatar_bucket_name: "useravatarbucket"
