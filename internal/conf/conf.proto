@@ -1,5 +1,5 @@
 syntax = "proto3";
-package user.conf;
+package thjam.user.conf;
 
 option go_package = "app/user/internal/conf;conf";
 
