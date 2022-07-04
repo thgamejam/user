@@ -1,0 +1,47 @@
+version: '3.1'
+
+services:
+  consul:
+    image: "consul:1.12.2"
+    container_name: consul
+    ports:
+      - "8300:8300"       # 集群内数据的读写和复制
+      - "8301:8301/udp"   # 单个数据中心gossip协议通讯
+      - "8302:8302/udp"   # 跨数据中心gossip协议通讯
+      - "8500:8500"       # 服务发现、注册服务、注销服务等HTTP接口 并且 提供UI服务
+      - "8600:8600/udp"   # 采用DNS协议提供服务发现功能
+    environment:
+      - CONSUL_BIND_INTERFACE=eth0
+      - 'CONSUL_LOCAL_CONFIG={"skip_leave_on_interrupt": true}'
+    command: agent -server -ui
+      -retry-join='0.0.0.0'
+      -bootstrap-expect=1
+      -client='0.0.0.0'
+      -datacenter=dev
+      -node=consul-node1
+    networks:
+      - default-net
+
+  mariadb:
+    image: "mariadb:10.6.8"
+    container_name: mariadb
+    ports:
+      - "3306:3306"
+    environment:
+      - MARIADB_ROOT_PASSWORD=123456
+    networks:
+      - default-net
+
+  redis:
+    image: "redis:6.2.7"
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - default-net
+
+
+networks:
+  default-net:
+    external:
+      name: dev_bridge

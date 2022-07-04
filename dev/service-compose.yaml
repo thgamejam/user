@@ -1,0 +1,17 @@
+version: '3.1'
+
+services:
+  user:
+    image: "user"
+    container_name: user
+    ports:
+      - "9000:9000"
+    volumes:
+      - "./data/conf:/data/conf"
+    networks:
+      - default-net
+
+networks:
+  default-net:
+    external:
+      name: dev_bridge
