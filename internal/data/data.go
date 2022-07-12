@@ -23,32 +23,37 @@ type Data struct {
 	Cache         *cache.Cache
 	DataBase      *gorm.DB
 	ObjectStorage *object_storage.ObjectStorage
-	UserConf      *conf.User
 }
 
 // NewData .
-func NewData(c *conf.Data, conf *conf.User, logger log.Logger) (*Data, func(), error) {
-	newCache, _ := cache.NewCache(c.Redis)
-	newDataBase, _ := database.NewDataBase(c.Database)
-	newObjectStorage, _ := object_storage.NewObjectStorage(c.ObjectStorage)
-	data := &Data{
-		Cache:         newCache,
-		DataBase:      newDataBase,
-		ObjectStorage: newObjectStorage,
-		UserConf:      conf,
-	}
-
-	ctx := context.Background()
-	ok, err := data.ObjectStorage.ExistBucket(ctx, conf.UserAvatarBucketName)
+func NewData(confData *conf.Data, confUser *conf.User, logger log.Logger) (*Data, func(), error) {
+	redis, err := cache.NewCache(confData.Redis)
 	if err != nil {
 		return nil, nil, err
 	}
-	if err == nil {
-		if !ok {
-			err := data.ObjectStorage.CreateBucket(ctx, conf.DefaultUserAvatarHash)
-			if err != nil {
-				//panic(err)
-			}
+	db, err := database.NewDataBase(confData.Database)
+	if err != nil {
+		return nil, nil, err
+	}
+	oss, err := object_storage.NewObjectStorage(confData.ObjectStorage)
+	if err != nil {
+		return nil, nil, err
+	}
+	data := &Data{
+		Cache:         redis,
+		DataBase:      db,
+		ObjectStorage: oss,
+	}
+
+	ctx := context.Background()
+	ok, err := data.ObjectStorage.ExistBucket(ctx, confUser.UserAvatarBucketName)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !ok {
+		err := data.ObjectStorage.CreateBucket(ctx, confUser.DefaultUserAvatarKey)
+		if err != nil {
+			return nil, nil, err
 		}
 	}
 

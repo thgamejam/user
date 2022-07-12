@@ -4,8 +4,8 @@ import (
 	"github.com/thgamejam/pkg/database"
 )
 
-// User 用户模型
-type User struct {
+// UserDB 用户模型
+type UserDB struct {
 	ID               uint32 `json:"id" gorm:"column:id"`
 	AccountID        uint32 `json:"account_id" gorm:"column:account_id"`               // 账户id索引
 	Name             string `json:"name" gorm:"column:name"`                           // 名称
@@ -18,12 +18,12 @@ type User struct {
 	database.Model
 }
 
-func (User) TableName() string {
+func (UserDB) TableName() string {
 	return "user"
 }
 
-// UserTagRelational 用户与标签关系
-type UserTagRelational struct {
+// UserTagRelationalDB 用户与标签关系
+type UserTagRelationalDB struct {
 	ID     uint32 `json:"id" gorm:"column:id"`
 	UserID uint32 `json:"user_id" gorm:"column:user_id"`         // 用户id
 	TagID  uint16 `json:"user_tag_id" gorm:"column:user_tag_id"` // 用户标签索引
@@ -31,17 +31,28 @@ type UserTagRelational struct {
 	database.Model
 }
 
-func (UserTagRelational) TableName() string {
+func (UserTagRelationalDB) TableName() string {
 	return "user_tag_relational"
 }
 
-// UserTag 用户标签模型
-type UserTag struct {
+// UserTagDB 用户标签模型
+type UserTagDB struct {
 	ID      uint16 `json:"id" gorm:"column:id"`
 	Content string `json:"content" gorm:"column:content"` // 标签内容
 	database.Model
 }
 
-func (UserTag) TableName() string {
+func (UserTagDB) TableName() string {
 	return "user_tag_enum"
+}
+
+// UserCache 用户信息缓存模型
+type UserCache struct {
+	ID        uint32   `json:"id"`         // 用户id
+	AccountID uint32   `json:"account_id"` // 账户id
+	Username  string   `json:"name"`       // 用户名
+	Bio       string   `json:"bio"`        // 简介
+	Tags      []string `json:"tags"`       // 标签
+	AvatarUrl string   `json:"avatar_url"` // 头像链接
+	AvatarExp int64    `json:"avatar_exp"` // 头像到期时间
 }
