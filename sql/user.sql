@@ -36,3 +36,5 @@ create table user_tag_enum
     ctime   datetime   not null comment '创建时间',
     mtime   datetime   not null comment '修改时间'
 );
+
+create unique index idx_user_tag_enum_content ON user_tag_enum (content);
