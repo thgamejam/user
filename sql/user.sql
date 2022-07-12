@@ -6,6 +6,7 @@ create table user
     account_id        int unsigned     not null comment '账户id索引',
     name              varchar(16)      not null default '' comment '名称',
     avatar_id         int unsigned     not null default 0 comment '头像id',
+    bio               varchar(64)      not null default '' comment '个人简介',
     display_tag1      tinyint unsigned not null default 0 comment '展示的标签1',
     display_tag2      tinyint unsigned not null default 0 comment '展示的标签2',
     display_tag3      tinyint unsigned not null default 0 comment '展示的标签3',

@@ -10,6 +10,7 @@ type User struct {
 	AccountID        uint32 `json:"account_id" gorm:"column:account_id"`               // 账户id索引
 	Name             string `json:"name" gorm:"column:name"`                           // 名称
 	AvatarID         uint32 `json:"avatar_id" gorm:"column:avatar_id"`                 // 头像id
+	Bio              string `json:"bio" gorm:"column:bio"`                             // 个人简介
 	DisplayTag1      uint16 `json:"display_tag1" gorm:"column:display_tag1"`           // 展示的标签1
 	DisplayTag2      uint16 `json:"display_tag2" gorm:"column:display_tag2"`           // 展示的标签2
 	DisplayTag3      uint16 `json:"display_tag3" gorm:"column:display_tag3"`           // 展示的标签3
