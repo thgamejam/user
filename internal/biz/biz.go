@@ -2,7 +2,6 @@ package biz
 
 import (
 	"context"
-	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
 )
 
@@ -15,14 +14,4 @@ type UserRepo interface {
 	GetUserByAccountID(ctx context.Context, accountID uint32) (user *UserInfo, err error)
 	//CreateUser 创建用户
 	CreateUser(ctx context.Context, accountID uint32) (user *UserInfo, err error)
-}
-
-type UserUseCase struct {
-	repo UserRepo
-	log  *log.Helper
-}
-
-// NewUserUseCase new a User use case.
-func NewUserUseCase(repo UserRepo, logger log.Logger) *UserUseCase {
-	return &UserUseCase{repo: repo, log: log.NewHelper(logger)}
 }
