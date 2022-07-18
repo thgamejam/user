@@ -2,74 +2,89 @@ package data
 
 import (
 	"context"
-	v1 "user/proto/api/user/v1"
+	"time"
 )
 
-// GetUserTagContent 获取用户标签内容
-func (r *userRepo) GetUserTagContent(ctx context.Context, tagID uint16) (*string, error) {
-	// 补充长度
-	if int(tagID) >= len(r.tagCache) {
-		empty := make([]string, int(tagID)-len(r.tagCache)+1)
-		r.tagCache = append(r.tagCache, empty...)
+// GetMultipleEnumTagContent 获取多个枚举列表中用户标签内容
+// 返回的字符串指针可能为nil。当返回字符串指针为nil时，表示tag-id对应的标签不存在
+func (r *userRepo) GetMultipleEnumTagContent(ctx context.Context, tagID []uint16) ([]*string, error) {
+	contents := make([]*string, len(tagID), len(tagID))
+	for i, id := range tagID {
+		content, err := r.GetEnumTagContent(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		contents[i] = content
+	}
+	return contents, nil
+}
+
+// GetEnumTagContent 获取枚举列表中用户标签内容
+// 返回的字符串指针可能为nil。当返回字符串指针为nil时，表示tag-id对应的标签不存在
+func (r *userRepo) GetEnumTagContent(ctx context.Context, tagID uint16) (*string, error) {
+	// 如果本地缓存中对应的tag-id存在，则直接返回
+	if r.tagCache[tagID].IsExist {
+		return &r.tagCache[tagID].Content, nil
 	}
 
-	if r.tagCache[tagID] != "" {
-		return &r.tagCache[tagID], nil
+	// 如果是不会过期的缓存，则直接返回nil不存在
+	if r.tagCache[tagID].QueryEXP == -1 {
+		return nil, nil
 	}
 
-	var tag UserTagDB
-	ok, err := r.DBGetUserTag(ctx, &tag, tagID)
+	// 如果缓存不需要重新获取，则直接返回nil不存在
+	t := time.Now().Unix()
+	if t < r.tagCache[tagID].QueryEXP {
+		return nil, nil
+	}
+
+	// 从数据库中重新查询数据
+	var tag UserTagEnumDB
+	ok, err := r.DBGetEnumTag(ctx, &tag, tagID)
 	if err != nil {
 		return nil, err
 	}
+
 	if !ok {
-		// 未找到标签
-		return nil, v1.ErrorUserTag("not found user tag")
+		// 如果未找到标签，则记录到本地缓存，修改缓存查询到期时间
+		r.tagCache[tag.ID].QueryEXP = t + 3600
+		return nil, nil
 	}
 
-	r.tagCache[tagID] = tag.Content
-	return &r.tagCache[tagID], nil
+	// 找到标签，填充数据到本地缓存
+	r.tagCache[tag.ID].TagID = uint16(tag.ID)
+	r.tagCache[tag.ID].Content = tag.Content
+	r.tagCache[tag.ID].IsExist = true
+	r.tagCache[tag.ID].QueryEXP = -1
+
+	return &r.tagCache[tagID].Content, nil
 }
 
-// CreateUserTag 创建用户标签
-func (r *userRepo) CreateUserTag(ctx context.Context, tagContent string) error {
-	for _, content := range r.tagCache {
-		if tagContent == content {
-			// 无法创建重复的标签
-			return v1.ErrorUserTag("duplicate user tag")
-		}
-	}
-
-	var tag UserTagDB
-	// 使用Limit(1)避免ErrRecordNotFound
-	tx := r.data.DataBase.Where("content = ?", tagContent).Limit(1).Find(&tag)
-	if tx.Error != nil {
-		r.log.Errorf("CreateUserTag - DB.Where().First - err=%v", tx.Error)
-		return v1.ErrorInternalServer("database error")
-	}
-	if tx.RowsAffected != 0 {
-		return v1.ErrorUserTag("duplicate user tag")
-	}
-
+// CreateEnumTag 枚举列表中创建用户标签
+func (r *userRepo) CreateEnumTag(ctx context.Context, tagContent string) error {
+	var tag UserTagEnumDB
 	// 创建标签
-	tag = UserTagDB{
+	tag = UserTagEnumDB{
 		Content: tagContent,
 	}
 	err := r.data.DataBase.Create(&tag).Error
 	if err != nil {
-		r.log.Errorf("CreateUserTag - DB.Create - err=%v", err)
-		return v1.ErrorInternalServer("database error")
+		return err
 	}
+
+	r.tagCache[tag.ID].TagID = uint16(tag.ID)
+	r.tagCache[tag.ID].Content = tag.Content
+	r.tagCache[tag.ID].IsExist = true
+	r.tagCache[tag.ID].QueryEXP = -1
 
 	return nil
 }
 
-// DBGetUserTag 从数据库中获取标签
-func (r *userRepo) DBGetUserTag(ctx context.Context, model *UserTagDB, id uint16) (bool, error) {
+// DBGetEnumTag 从数据库中获取标签
+func (r *userRepo) DBGetEnumTag(ctx context.Context, model *UserTagEnumDB, id uint16) (bool, error) {
 	tx := r.data.DataBase.Limit(1).Find(model, id)
 	if tx.Error != nil {
-		r.log.Errorf("DBGetUserTag - DB.Limit(1).Find - err=%v", tx.Error)
-		return false, v1.ErrorInternalServer("database error")
+		return false, tx.Error
 	}
 	if tx.RowsAffected == 0 {
 		return false, nil
@@ -77,23 +92,42 @@ func (r *userRepo) DBGetUserTag(ctx context.Context, model *UserTagDB, id uint16
 	return true, nil
 }
 
-// DBGetALLUserTagContent 缓存所有的标签内容
-func (r *userRepo) DBGetALLUserTagContent(ctx context.Context) ([]string, error) {
-	var tags []UserTagDB
-	tags = []UserTagDB{}
-
-	tx := r.data.DataBase.Order("id").Find(&tags)
-	if tx.Error != nil {
-		r.log.Errorf("DBGetALLUserTagContent - DB.Order(id).Find - err=%v", tx.Error)
-		return nil, v1.ErrorInternalServer("database error")
+// localCacheSyncTags 标签本地缓存同步数据
+func (r *userRepo) localCacheSyncTags(ctx context.Context) error {
+	// 初始化切片
+	r.tagCache = make([]*TagLocalCache, 65535, 65535)
+	t := time.Now().Unix() + 3600 // 使数据在初始化后一个小时再更新查询
+	for i := uint16(0); i < 65535; i++ {
+		r.tagCache[i] = &TagLocalCache{
+			TagID:    i,
+			Content:  "",
+			IsExist:  false,
+			QueryEXP: t,
+		}
 	}
 
-	length := tags[len(tags)-1].ID
-	tagStr := make([]string, length, length)
+	// 迭代器获取数据库数据
+	rows, err := r.data.DataBase.Model(&UserTagEnumDB{}).Order("id").Rows()
+	if err != nil {
+		return err
+	}
+	var tag UserTagEnumDB
+	for rows.Next() {
+		err = r.data.DataBase.ScanRows(rows, &tag)
+		if err != nil {
+			return err
+		}
 
-	for _, tag := range tags {
-		tagStr[tag.ID] = tag.Content
+		if "" != tag.Content {
+			r.tagCache[tag.ID].Content = tag.Content
+			r.tagCache[tag.ID].IsExist = true
+		}
 	}
 
-	return tagStr, nil
+	// 将已存在的id设置为不过期不重复查询
+	for i := uint32(0); i <= tag.ID; i++ {
+		r.tagCache[i].QueryEXP = -1
+	}
+
+	return nil
 }
