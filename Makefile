@@ -37,7 +37,7 @@ init:
 	go install github.com/google/wire/cmd/wire@latest
 	go install github.com/envoyproxy/protoc-gen-validate@latest
 	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest
-	go mod tidy -compat=1.17
+	go mod tidy
 
 .PHONY: dev
 # 运行测试环境
