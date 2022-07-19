@@ -67,7 +67,7 @@ func (r *userRepo) CreateEnumTag(ctx context.Context, tagContent string) error {
 	tag = UserTagEnumDB{
 		Content: tagContent,
 	}
-	err := r.data.DataBase.Create(&tag).Error
+	err := r.data.sql.Create(&tag).Error
 	if err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func (r *userRepo) CreateEnumTag(ctx context.Context, tagContent string) error {
 
 // DBGetEnumTag 从数据库中获取标签
 func (r *userRepo) DBGetEnumTag(ctx context.Context, model *UserTagEnumDB, id uint16) (bool, error) {
-	tx := r.data.DataBase.Limit(1).Find(model, id)
+	tx := r.data.sql.Limit(1).Find(model, id)
 	if tx.Error != nil {
 		return false, tx.Error
 	}
@@ -107,13 +107,13 @@ func (r *userRepo) localCacheSyncTags(ctx context.Context) error {
 	}
 
 	// 迭代器获取数据库数据
-	rows, err := r.data.DataBase.Model(&UserTagEnumDB{}).Order("id").Rows()
+	rows, err := r.data.sql.Model(&UserTagEnumDB{}).Order("id").Rows()
 	if err != nil {
 		return err
 	}
 	var tag UserTagEnumDB
 	for rows.Next() {
-		err = r.data.DataBase.ScanRows(rows, &tag)
+		err = r.data.sql.ScanRows(rows, &tag)
 		if err != nil {
 			return err
 		}
