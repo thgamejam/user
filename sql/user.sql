@@ -11,6 +11,7 @@ create table user
     display_tag2      tinyint unsigned not null default 0 comment '展示的标签2',
     display_tag3      tinyint unsigned not null default 0 comment '展示的标签3',
     allow_syndication boolean          not null default true comment '是否允许联合发布邀请',
+    status            tinyint unsigned not null default 1 comment '用户状态',
     ctime             datetime         not null comment '创建时间',
     mtime             datetime         not null comment '修改时间'
 );
