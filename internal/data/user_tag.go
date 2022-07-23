@@ -3,12 +3,14 @@ package data
 import (
 	"context"
 	"time"
+
+	"github.com/thgamejam/pkg/util"
 )
 
 // GetMultipleEnumTagContent 获取多个枚举列表中用户标签内容
 // 返回的字符串指针可能为nil。当返回字符串指针为nil时，表示tag-id对应的标签不存在
-func (r *userRepo) GetMultipleEnumTagContent(ctx context.Context, tagID []uint16) ([]*string, error) {
-	contents := make([]*string, len(tagID), len(tagID))
+func (r *userRepo) GetMultipleEnumTagContent(ctx context.Context, tagID ...uint16) ([]util.Val[*string], error) {
+	contents := make([]util.Val[*string], len(tagID), len(tagID))
 	for i, id := range tagID {
 		content, err := r.GetEnumTagContent(ctx, id)
 		if err != nil {
@@ -20,44 +22,37 @@ func (r *userRepo) GetMultipleEnumTagContent(ctx context.Context, tagID []uint16
 }
 
 // GetEnumTagContent 获取枚举列表中用户标签内容
-// 返回的字符串指针可能为nil。当返回字符串指针为nil时，表示tag-id对应的标签不存在
-func (r *userRepo) GetEnumTagContent(ctx context.Context, tagID uint16) (*string, error) {
-	// 如果本地缓存中对应的tag-id存在，则直接返回
-	if r.tagCache[tagID].IsExist {
-		return &r.tagCache[tagID].Content, nil
-	}
-
-	// 如果是不会过期的缓存，则直接返回nil不存在
+func (r *userRepo) GetEnumTagContent(ctx context.Context, tagID uint16) (util.Val[*string], error) {
+	// 如果是不会过期的缓存，则直接返回
 	if r.tagCache[tagID].QueryEXP == -1 {
-		return nil, nil
+		return util.NewValue(r.tagCache[tagID].IsExist, &r.tagCache[tagID].Content), nil
 	}
 
-	// 如果缓存不需要重新获取，则直接返回nil不存在
+	// 如果缓存不需要重新获取，则直接返回
 	t := time.Now().Unix()
-	if t < r.tagCache[tagID].QueryEXP {
-		return nil, nil
+	if t > r.tagCache[tagID].QueryEXP {
+		return util.NewValue(r.tagCache[tagID].IsExist, &r.tagCache[tagID].Content), nil
 	}
 
 	// 从数据库中重新查询数据
-	var tag UserTagEnumDB
-	ok, err := r.DBGetEnumTag(ctx, &tag, tagID)
+	content, err := r.dbGetEnumTag(ctx, tagID)
 	if err != nil {
 		return nil, err
 	}
 
-	if !ok {
+	if !content.IsExist() {
 		// 如果未找到标签，则记录到本地缓存，修改缓存查询到期时间
-		r.tagCache[tag.ID].QueryEXP = t + 3600
+		r.tagCache[tagID].QueryEXP = t + 3600
 		return nil, nil
 	}
 
 	// 找到标签，填充数据到本地缓存
-	r.tagCache[tag.ID].TagID = uint16(tag.ID)
-	r.tagCache[tag.ID].Content = tag.Content
-	r.tagCache[tag.ID].IsExist = true
-	r.tagCache[tag.ID].QueryEXP = -1
+	r.tagCache[tagID].TagID = tagID
+	r.tagCache[tagID].Content = content.Val()
+	r.tagCache[tagID].IsExist = true
+	r.tagCache[tagID].QueryEXP = -1
 
-	return &r.tagCache[tagID].Content, nil
+	return util.NewValue(r.tagCache[tagID].IsExist, &r.tagCache[tagID].Content), nil
 }
 
 // CreateEnumTag 枚举列表中创建用户标签
@@ -80,16 +75,18 @@ func (r *userRepo) CreateEnumTag(ctx context.Context, tagContent string) error {
 	return nil
 }
 
-// DBGetEnumTag 从数据库中获取标签
-func (r *userRepo) DBGetEnumTag(ctx context.Context, model *UserTagEnumDB, id uint16) (bool, error) {
-	tx := r.data.sql.Limit(1).Find(model, id)
+// dbGetEnumTag 从数据库中获取标签
+func (r *userRepo) dbGetEnumTag(ctx context.Context, id uint16) (content util.Val[string], err error) {
+	var model UserTagEnumDB
+	tx := r.data.sql.Limit(1).Find(&model, id)
 	if tx.Error != nil {
-		return false, tx.Error
+		err = tx.Error
+		return
 	}
 	if tx.RowsAffected == 0 {
-		return false, nil
+		return
 	}
-	return true, nil
+	return util.NewValue(true, model.Content), nil
 }
 
 // localCacheSyncTags 标签本地缓存同步数据

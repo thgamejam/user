@@ -5,20 +5,23 @@ import (
 
 	"github.com/go-redis/redis/v8"
 
+	"github.com/thgamejam/pkg/util"
 	"github.com/thgamejam/pkg/util/strconv"
 	"user/internal/biz"
 )
 
-type dataStatus Val[uint8]
+type dataStatus util.Val[uint8]
 
 func newDataStatus(inDB bool, value uint8) dataStatus {
-	return NewValue(inDB, value)
+	return util.NewValue(inDB, value)
 }
 
 var userStatusCacheKey = func(id uint32) string {
 	return "user_status_" + strconv.UItoa(id)
 }
 
+// GetUserStatus 获取用户状态
+// 如果不返回错误，则返回的map中一定有全量的用户状态，没有nil的情况
 func (r *userRepo) GetUserStatus(ctx context.Context, userID []uint32) (map[uint32]*biz.UserStatus, error) {
 	result, err := r.cacheGetUserStatus(ctx, userID)
 	if err != nil {
@@ -26,7 +29,7 @@ func (r *userRepo) GetUserStatus(ctx context.Context, userID []uint32) (map[uint
 	}
 
 	for id, v := range result {
-		if v.InDB() {
+		if v.IsExist() {
 			continue
 		}
 
@@ -35,7 +38,7 @@ func (r *userRepo) GetUserStatus(ctx context.Context, userID []uint32) (map[uint
 		if err != nil {
 			return nil, err
 		}
-		if s.InDB() {
+		if s.IsExist() {
 			result[id] = newDataStatus(true, s.Val())
 			// 将数据存入缓存内
 			_ = r.cacheSetUserStatus(ctx, map[uint32]uint8{id: s.Val()})
@@ -46,7 +49,7 @@ func (r *userRepo) GetUserStatus(ctx context.Context, userID []uint32) (map[uint
 	for _, id := range userID {
 		s, ok := result[id]
 		if !ok {
-			// 不应该发生的
+			// TODO 不应该发生的
 		}
 		status[id] = biz.NewUserStatus(s.Val())
 	}
@@ -114,6 +117,14 @@ func (r *userRepo) cacheSetUserStatus(ctx context.Context, status map[uint32]uin
 		pipe.Set(ctx, userStatusCacheKey(id), strconv.UItoa(v), 0)
 	}
 	_, err := pipe.Exec(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *userRepo) cacheDelUserStatus(ctx context.Context, userID uint32) error {
+	err := r.data.rdb.Del(ctx, userStatusCacheKey(userID))
 	if err != nil {
 		return err
 	}
