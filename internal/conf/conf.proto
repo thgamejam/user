@@ -28,12 +28,14 @@ message Server {
 message Data {
   pkg.conf.Database database = 1;
   pkg.conf.Redis redis = 2;
-  pkg.conf.ObjectStorage object_storage= 3;
+  pkg.conf.ObjectStorage object_storage = 3;
 }
 
 message User {
+  // 默认用户名前缀
+  string default_username_prefix = 1;
   // 默认用户头像
-  string default_user_avatar_hash = 1;
+  string default_user_avatar_key = 2;
   // 用户头像桶名称
-  string user_avatar_bucket_name = 2;
+  string user_avatar_bucket_name = 3;
 }

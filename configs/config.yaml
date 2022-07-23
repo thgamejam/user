@@ -28,5 +28,6 @@ data:
     token: ""
 
 user:
-  default_user_avatar_hash: "value"
-  user_avatar_bucket_name: "useravatarbucket"
+  default_username_prefix: "thjam_"
+  default_user_avatar_key: "default-user-avatar.webp"
+  user_avatar_bucket_name: "user-avatar"
