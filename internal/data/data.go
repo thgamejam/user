@@ -20,9 +20,9 @@ var ProviderSet = wire.NewSet(
 
 // Data .
 type Data struct {
-	Cache         *cache.Cache
-	DataBase      *gorm.DB
-	ObjectStorage *object_storage.ObjectStorage
+	rdb *cache.Cache
+	sql *gorm.DB
+	oss *object_storage.ObjectStorage
 }
 
 // NewData .
@@ -40,18 +40,18 @@ func NewData(confData *conf.Data, confUser *conf.User, logger log.Logger) (*Data
 		return nil, nil, err
 	}
 	data := &Data{
-		Cache:         redis,
-		DataBase:      db,
-		ObjectStorage: oss,
+		rdb: redis,
+		sql: db,
+		oss: oss,
 	}
 
 	ctx := context.Background()
-	ok, err := data.ObjectStorage.ExistBucket(ctx, confUser.UserAvatarBucketName)
+	ok, err := data.oss.ExistBucket(ctx, confUser.UserAvatarBucketName)
 	if err != nil {
 		return nil, nil, err
 	}
 	if !ok {
-		err := data.ObjectStorage.CreateBucket(ctx, confUser.DefaultUserAvatarKey)
+		err := data.oss.CreateBucket(ctx, confUser.DefaultUserAvatarKey)
 		if err != nil {
 			return nil, nil, err
 		}
