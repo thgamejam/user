@@ -2,6 +2,7 @@ package biz
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -9,7 +10,7 @@ import (
 type UserInfo struct {
 	ID        uint32   // 用户id
 	AccountID uint32   // 账户id
-	Name      string   // 用户名
+	Username  string   // 用户名
 	Bio       string   // 简介
 	Tags      []string // 标签
 	AvatarUrl string   // 头像链接
@@ -23,6 +24,10 @@ type UserUseCase struct {
 // NewUserUseCase new a User use case.
 func NewUserUseCase(repo UserRepo, logger log.Logger) *UserUseCase {
 	return &UserUseCase{repo: repo, log: log.NewHelper(logger)}
+}
+
+var buildDefaultUsername = func(prefix string, accountID uint32) string {
+	return prefix + strconv.FormatUint(uint64(accountID), 36)
 }
 
 // GetUserByAccountID 通过账户ID获取用户信息
