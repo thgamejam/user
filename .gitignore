@@ -34,11 +34,12 @@ bin/
 .idea/
 *.swp
 
-# proto 生成文件
+# 生成文件
 *.pb.go
 *.pb.validate.go
 *.swagger.json
 openapi.yaml
+wire_gen.go
 
 /proto/*
 
