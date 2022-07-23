@@ -4,7 +4,7 @@ create table user
 (
     id                int unsigned auto_increment primary key,
     account_id        int unsigned     not null comment '账户id索引',
-    name              varchar(16)      not null default '' comment '名称',
+    uname             varchar(16)      not null comment '用户名',
     avatar_id         int unsigned     not null default 0 comment '头像id',
     bio               varchar(64)      not null default '' comment '个人简介',
     display_tag1      tinyint unsigned not null default 0 comment '展示的标签1',
@@ -15,6 +15,9 @@ create table user
     ctime             datetime         not null comment '创建时间',
     mtime             datetime         not null comment '修改时间'
 );
+
+alter table user
+    auto_increment = 100000;
 
 create unique index idx_user_account ON user (account_id);
 
@@ -37,5 +40,8 @@ create table user_tag_enum
     ctime   datetime   not null comment '创建时间',
     mtime   datetime   not null comment '修改时间'
 );
+
+alter table user_tag_enum
+    auto_increment = 1;
 
 create unique index idx_user_tag_enum_content ON user_tag_enum (content);
