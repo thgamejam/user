@@ -33,7 +33,7 @@ type UserRepo interface {
 	CreateUser(ctx context.Context, accountID uint32, username string) (user *UserInfo, err error)
 
 	// EditUserInfo 修改用户
-	EditUserInfo(ctx context.Context, user *UserInfo) error
+	EditUserInfo(ctx context.Context, userID uint32, user *ModifiableUserInfo) error
 
 	// BanUser 封禁用户
 	BanUser(ctx context.Context, userID uint32) error
