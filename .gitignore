@@ -47,3 +47,6 @@ go.sum
 
 # docker date
 /dev/data/
+
+# local history
+.history/
