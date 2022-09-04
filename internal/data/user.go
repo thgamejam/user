@@ -2,7 +2,6 @@ package data
 
 import (
 	"context"
-
 	"github.com/thgamejam/pkg/util"
 	"github.com/thgamejam/pkg/util/strconv"
 	"user/internal/biz"
@@ -90,6 +89,36 @@ func (r *userRepo) CreateUser(ctx context.Context, accountID uint32, username st
 		// TODO log
 	}
 	return user, nil
+}
+
+func (r *userRepo) EditUserInfo(ctx context.Context, userID uint32, info *biz.ModifiableUserInfo) (err error) {
+	update := make(map[string]interface{}, 3)
+	if info.Username.IsExist() {
+		update["uname"] = info.Username.Val()
+	}
+	if info.Bio.IsExist() {
+		update["bio"] = info.Bio.Val()
+	}
+	if info.Tags.IsExist() {
+		update["display_tag1"] = ""
+		update["display_tag2"] = ""
+		update["display_tag3"] = ""
+		size := len(info.Tags.Val())
+		if size > 0 {
+			update["display_tag1"] = info.Tags.Val()[0]
+		} else if size > 1 {
+			update["display_tag2"] = info.Tags.Val()[1]
+		} else if size > 2 {
+			update["display_tag3"] = info.Tags.Val()[2]
+		}
+	}
+	tx := r.data.sql.Model(&UserDB{}).Where("id = ?", userID).Updates(update)
+	if err = tx.Error; err != nil {
+		return
+	}
+
+	err = r.cacheDelUser(ctx, userID)
+	return
 }
 
 // dbGetUserByUserID 在数据库中通过用户ID获取用户
@@ -223,9 +252,9 @@ func (r *userRepo) cacheGetUserByAccountID(
 }
 
 // cacheGetUser 在缓存中通过用户id获取用户信息
-func (r *userRepo) cacheGetUser(ctx context.Context, id uint32) (user util.Val[*biz.UserInfo], err error) {
+func (r *userRepo) cacheGetUser(ctx context.Context, userID uint32) (user util.Val[*biz.UserInfo], err error) {
 	var cache UserCache
-	ok, err := r.data.rdb.Get(ctx, userCacheKey(id), &cache)
+	ok, err := r.data.rdb.Get(ctx, userCacheKey(userID), &cache)
 	if err != nil {
 		return
 	}
@@ -264,4 +293,8 @@ func (r *userRepo) cacheSetUser(ctx context.Context, user *biz.UserInfo) error {
 		return err
 	}
 	return nil
+}
+
+func (r *userRepo) cacheDelUser(ctx context.Context, userID uint32) error {
+	return r.data.rdb.Del(ctx, userCacheKey(userID))
 }
