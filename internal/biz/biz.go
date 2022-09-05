@@ -35,9 +35,6 @@ type UserRepo interface {
 	// EditUserInfo 修改用户
 	EditUserInfo(ctx context.Context, userID uint32, user *ModifiableUserInfo) error
 
-	// BanUser 封禁用户
-	BanUser(ctx context.Context, userID uint32) error
-
-	// DeBanUser 解封用户
-	DeBanUser(ctx context.Context, userID uint32) error
+	// EditUserStatus 修改用户状态
+	EditUserStatus(ctx context.Context, userID uint32, userStatus *UserStatus) error
 }

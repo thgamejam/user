@@ -93,11 +93,43 @@ func (uc UserUseCase) GetUploadURL(ctx context.Context, userID uint32, crc32 str
 }
 
 func (uc *UserUseCase) BanUser(ctx context.Context, userID uint32) error {
-	return uc.repo.BanUser(ctx, userID)
+	arr, err := uc.repo.GetUserStatus(ctx, []uint32{userID})
+	if err != nil {
+		return err
+	}
+	status := arr[0]
+	if !status.IsExist() {
+		// TODO 账户不存在，无法封禁不存在的用户，需要返回一个错误
+		return errors.New("todo")
+	}
+
+	status.SetBan(true)
+	err = uc.repo.EditUserStatus(ctx, userID, status)
+	if err != nil {
+		// TODO 处理错误
+		return err
+	}
+	return nil
 }
 
 func (uc *UserUseCase) DeBanUser(ctx context.Context, userID uint32) error {
-	return uc.repo.DeBanUser(ctx, userID)
+	arr, err := uc.repo.GetUserStatus(ctx, []uint32{userID})
+	if err != nil {
+		return err
+	}
+	status := arr[0]
+	if !status.IsExist() {
+		// TODO 账户不存在，无法解封不存在的用户，需要返回一个错误
+		return errors.New("todo")
+	}
+
+	status.SetBan(false)
+	err = uc.repo.EditUserStatus(ctx, userID, status)
+	if err != nil {
+		// TODO 处理错误
+		return err
+	}
+	return nil
 }
 
 func (uc *UserUseCase) EditUserTags(ctx context.Context, userID uint32, tags []uint32) (err error) {

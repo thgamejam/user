@@ -57,6 +57,16 @@ func (r *userRepo) GetUserStatus(ctx context.Context, userID []uint32) (map[uint
 	return status, nil
 }
 
+func (r *userRepo) EditUserStatus(ctx context.Context, userID uint32, userStatus *biz.UserStatus) (err error) {
+	err = r.dbSetUserStatus(ctx, userID, uint8(*userStatus))
+	if err != nil {
+		return
+	}
+
+	err = r.cacheDelUserStatus(ctx, userID)
+	return
+}
+
 // dbGetUserStatus 从数据库中获取用户状态
 func (r *userRepo) dbGetUserStatus(ctx context.Context, userID uint32) (status dataStatus, err error) {
 	var user UserDB
@@ -69,6 +79,12 @@ func (r *userRepo) dbGetUserStatus(ctx context.Context, userID uint32) (status d
 	}
 
 	status = newDataStatus(true, user.Status)
+	return
+}
+
+func (r *userRepo) dbSetUserStatus(ctx context.Context, userID uint32, status uint8) (err error) {
+	tx := r.data.sql.Model(&UserDB{}).Where("id = ?", userID).Update("status", status)
+	err = tx.Error
 	return
 }
 
