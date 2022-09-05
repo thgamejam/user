@@ -83,8 +83,25 @@ func (uc *UserUseCase) SaveUserInfo(ctx context.Context, userID uint32, userInfo
 }
 
 // GetUserTagList 获取用户所有的tag列表
-func (uc *UserUseCase) GetUserTagList(ctx context.Context, userID uint32) (tags map[uint32]string, err error) {
-	return uc.repo.GetUserTags(ctx, userID)
+func (uc *UserUseCase) GetUserTagList(ctx context.Context, userID uint32) (tags map[uint16]string, err error) {
+	ids, err := uc.repo.GetUserOwnTags(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	contents, err := uc.repo.GetMultipleEnumTagContent(ctx, ids...)
+	if err != nil {
+		return nil, err
+	}
+
+	tags = make(map[uint16]string, len(contents))
+	for i, content := range contents {
+		if content.IsExist() {
+			tags[ids[i]] = *content.Val()
+		}
+	}
+
+	return
 }
 
 // GetUploadURL 获取头像上传链接

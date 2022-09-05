@@ -23,8 +23,11 @@ type UserRepo interface {
 	// GetUserInfoByUserID 通过用户ID获取用户信息
 	GetUserInfoByUserID(ctx context.Context, userID uint32) (user util.Val[*UserInfo], err error)
 
-	// GetUserTags 获取用户所有标签
-	GetUserTags(ctx context.Context, userID uint32) (tags map[uint32]string, err error)
+	// GetUserOwnTags 获取用户所有标签
+	GetUserOwnTags(ctx context.Context, userID uint32) (tags []uint16, err error)
+
+	// GetMultipleEnumTagContent 获取多个枚举列表中用户标签内容
+	GetMultipleEnumTagContent(ctx context.Context, tagID ...uint16) ([]util.Val[*string], error)
 
 	// GetUploadAvatarURL 获取头像上传链接
 	GetUploadAvatarURL(ctx context.Context, userID uint32, crc32 string, sha1 string) (url string, err error)

@@ -7,8 +7,24 @@ import (
 	"github.com/thgamejam/pkg/util"
 )
 
+// GetUserOwnTags 获取用户拥有的所有的标签
+func (r *userRepo) GetUserOwnTags(ctx context.Context, userID uint32) (tags []uint16, err error) {
+	var dbTags []UserTagRelationalDB
+	tx := r.data.sql.Where("id = ?", userID).Find(&dbTags)
+	err = tx.Error
+	if err != nil {
+		return nil, err
+	}
+
+	size := len(dbTags)
+	tags = make([]uint16, size, size)
+	for i, dbTag := range dbTags {
+		tags[i] = dbTag.TagID
+	}
+	return
+}
+
 // GetMultipleEnumTagContent 获取多个枚举列表中用户标签内容
-// 返回的字符串指针可能为nil。当返回字符串指针为nil时，表示tag-id对应的标签不存在
 func (r *userRepo) GetMultipleEnumTagContent(ctx context.Context, tagID ...uint16) ([]util.Val[*string], error) {
 	contents := make([]util.Val[*string], len(tagID), len(tagID))
 	for i, id := range tagID {
