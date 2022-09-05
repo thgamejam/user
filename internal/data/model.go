@@ -7,7 +7,7 @@ import (
 // UserDB 用户模型
 type UserDB struct {
 	database.Model
-	AccountID        uint32 `json:"account_id" gorm:"column:account_id"`               // 账户id索引
+	AccountID        uint32 `json:"account_id" gorm:"column:account_id; uniqueIndex"`  // 账户id索引
 	Username         string `json:"uname" gorm:"column:uname"`                         // 名称
 	AvatarID         uint32 `json:"avatar_id" gorm:"column:avatar_id"`                 // 头像id
 	Bio              string `json:"bio" gorm:"column:bio"`                             // 个人简介
@@ -26,9 +26,9 @@ func (UserDB) TableName() string {
 // UserTagRelationalDB 用户与标签关系
 type UserTagRelationalDB struct {
 	database.Model
-	UserID uint32 `json:"user_id" gorm:"column:user_id"`         // 用户id
+	database.DeleteModel
+	UserID uint32 `json:"user_id" gorm:"column:user_id; index"`  // 用户id
 	TagID  uint16 `json:"user_tag_id" gorm:"column:user_tag_id"` // 用户标签索引
-	Status uint16 `json:"status" gorm:"column:status"`           // 标签状态
 }
 
 func (UserTagRelationalDB) TableName() string {

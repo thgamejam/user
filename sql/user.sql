@@ -26,7 +26,7 @@ create table user_tag_relational
     id          int unsigned auto_increment primary key,
     user_id     int unsigned     not null comment '用户id',
     user_tag_id tinyint unsigned not null default 0 comment '用户标签索引',
-    status      tinyint unsigned not null default 0 comment '标签状态',
+    del         bool             not null default false comment '删除状态',
     ctime       datetime         not null comment '创建时间',
     mtime       datetime         not null comment '修改时间'
 );
