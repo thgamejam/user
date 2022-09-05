@@ -38,4 +38,6 @@ message User {
   string default_user_avatar_key = 2;
   // 用户头像桶名称
   string user_avatar_bucket_name = 3;
+  // UploadFile 服务的密钥
+  string upload_file_service_secret_key = 4;
 }
