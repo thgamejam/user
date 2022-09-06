@@ -45,3 +45,20 @@ alter table user_tag_enum
     auto_increment = 1;
 
 create unique index idx_user_tag_enum_content ON user_tag_enum (content);
+
+create table relationship (
+    id              int unsigned        auto_increment  primary key,
+    userid          int                 not null                comment '用户id',
+    follow_userid   int                 not null                comment '被关注用户id',
+    ctime           datetime            not null                comment '创建时间',
+    mtime           datetime            not null                comment '修改时间'
+);
+
+create table user_follow_info (
+    id              int unsigned        auto_increment          primary key ,
+    userid          int                 not null                comment '用户id',
+    fans_count      int                 not null    default 0   comment '粉丝数量',
+    follow_count    int                 not null    default 0   comment '关注数量',
+    ctime           datetime            not null                comment '创建时间',
+    mtime           datetime            not null                comment '修改时间'
+)

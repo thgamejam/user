@@ -40,4 +40,19 @@ type UserRepo interface {
 
 	// EditUserStatus 修改用户状态
 	EditUserStatus(ctx context.Context, userID uint32, userStatus *UserStatus) error
+
+	// GetUserFansListByPage 获取用户粉丝分页列表
+	GetUserFansListByPage(ctx context.Context, userid uint32, page uint32) (idList []uint32, err error)
+
+	// GetUserFollowListByPage 获取用户关注分页列表
+	GetUserFollowListByPage(ctx context.Context, userid uint32, page uint32) (isList []uint32, err error)
+
+	// GetUserFollowInfo 获取用户关注信息
+	GetUserFollowInfo(ctx context.Context, userid uint32) (followCount, fansCount uint32, err error)
+
+	// AddUserFollowInfo 添加用户关注信息
+	AddUserFollowInfo(ctx context.Context, userid uint32, followUserId uint32) (err error)
+
+	// DeleteUserFollowInfo 删除用户关注信息
+	DeleteUserFollowInfo(ctx context.Context, userid uint32, followUserId uint32) (err error)
 }

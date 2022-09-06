@@ -62,3 +62,26 @@ type TagLocalCache struct {
 	IsExist  bool   // 是否存在
 	QueryEXP int64  // 查询失效时间，时间戳
 }
+
+// Relationship 关系映射模型
+type Relationship struct {
+	Userid       uint32 `json:"userid" gorm:"column:userid"`
+	FollowUserid uint32 `json:"followUserid" gorm:"column:follow_userid"`
+	database.Model
+}
+
+func (Relationship) TableName() string {
+	return "relationship"
+}
+
+// UserFollowInfo 用户关注信息模型
+type UserFollowInfo struct {
+	Userid      uint32 `json:"userid" gorm:"column:userid"`
+	FansCount   uint32 `json:"fansCount" gorm:"column:fans_count"`
+	FollowCount uint32 `json:"followCount" gorm:"column:follow_count"`
+	database.Model
+}
+
+func (UserFollowInfo) TableName() string {
+	return "user_follow_info"
+}
