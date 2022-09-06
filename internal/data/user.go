@@ -2,6 +2,10 @@ package data
 
 import (
 	"context"
+	"encoding/json"
+
+	"github.com/go-redis/redis/v8"
+
 	"github.com/thgamejam/pkg/util"
 	"github.com/thgamejam/pkg/util/strconv"
 	"user/internal/biz"
@@ -17,29 +21,81 @@ var userIndexByAccountIDCacheKey = func(accountID uint32) string {
 }
 
 // GetUserInfoByUserID 通过用户ID获取用户信息
-func (r *userRepo) GetUserInfoByUserID(ctx context.Context, userID uint32) (user util.Val[*biz.UserInfo], err error) {
+func (r *userRepo) GetUserInfoByUserID(
+	ctx context.Context, userID ...uint32) (res map[uint32]util.Val[*biz.UserInfo], err error) {
 
-	user, err = r.cacheGetUser(ctx, userID)
+	res, err = r.cacheGetUser(ctx, userID...)
 	if err != nil {
-		return
-	}
-	if user.IsExist() {
 		return
 	}
 
 	// 如果缓存中不存在，再从数据库中获取
-	user, err = r.dbGetUserByUserID(ctx, userID)
-	if err != nil {
-		return
+	undone := make([]uint32, len(userID))
+	for _, id := range userID {
+		if info, ok := res[id]; ok {
+			if !info.IsExist() {
+				undone = append(undone, id)
+			}
+		} else {
+			undone = append(undone, id)
+		}
 	}
-	// 数据库中不存在
-	if !user.IsExist() {
+
+	models, err := r.dbGetUserByUserID(ctx, userID...)
+	if err != nil {
 		return
 	}
 
-	// 保存到缓存中
-	err = r.cacheSetUser(ctx, user.Val())
+	status := make(map[uint32]uint8)
+	for id, v := range models {
+		if !v.IsExist() {
+			// 数据库中不存在
+			status[id] = 0
+			continue
+		}
+
+		model := v.Val()
+		// 获取标签内容
+		tagList, err := r.GetMultipleEnumTagContent(ctx, model.DisplayTag1, model.DisplayTag2, model.DisplayTag3)
+		if err != nil {
+			return
+		}
+		// 清除不存在的标签id
+		tags := make([]string, 0, 3)
+		for _, v := range tagList {
+			if v.IsExist() {
+				tags = append(tags, *v.Val())
+			}
+		}
+
+		avatarURL, err := r.GetUserAvatarURL(ctx, model.AvatarID)
+		if err != nil {
+			// TODO 这里不应该发生错误，但还是需要处理
+		}
+
+		var info biz.UserInfo
+		info = biz.UserInfo{
+			ID:        model.ID,
+			AccountID: model.AccountID,
+			Username:  model.Username,
+			Bio:       model.Bio,
+			Tags:      tags,
+			AvatarUrl: avatarURL,
+		}
+		res[model.ID] = util.NewValue(true, &info)
+
+		// 保存到缓存中
+		err = r.cacheSetUser(ctx, &info)
+		if err != nil {
+			// TODO 应该打印错误
+		}
+		status[id] = model.Status
+	}
+
+	// 用户状态保存到缓存
+	err = r.cacheSetUserStatus(ctx, status)
 	if err != nil {
+		// TODO 应该打印错误
 	}
 
 	return
@@ -84,6 +140,8 @@ func (r *userRepo) CreateUser(ctx context.Context, accountID uint32, username st
 	if err != nil {
 		return
 	}
+
+	// 删除用户状态缓存
 	err = r.cacheDelUserStatus(ctx, user.ID)
 	if err != nil {
 		// TODO log
@@ -123,44 +181,32 @@ func (r *userRepo) EditUserInfo(ctx context.Context, userID uint32, info *biz.Mo
 
 // dbGetUserByUserID 在数据库中通过用户ID获取用户
 func (r *userRepo) dbGetUserByUserID(
-	ctx context.Context, userID uint32) (user util.Val[*biz.UserInfo], err error) {
+	ctx context.Context, userID ...uint32) (res map[uint32]util.Val[*UserDB], err error) {
 
-	var model UserDB
-	tx := r.data.sql.Limit(1).Find(&model, userID)
+	// 初始化
+	notExist := util.NewValue[*UserDB](false, nil)
+	length := len(userID)
+	res = make(map[uint32]util.Val[*UserDB], length)
+	for _, id := range userID {
+		res[id] = notExist
+	}
+
+	models := make([]UserDB, length)
+	tx := r.data.sql.Find(&models, userID)
 	if tx.Error != nil {
 		err = tx.Error
-		return
+		// TODO 处理错误
 	}
 	if tx.RowsAffected == 0 {
 		return
 	}
 
-	// 获取标签内容
-	tagList, err := r.GetMultipleEnumTagContent(ctx, model.DisplayTag1, model.DisplayTag2, model.DisplayTag3)
-	if err != nil {
-		return
-	}
-	// 清除不存在的标签id
-	tags := make([]string, 0, 3)
-	for _, v := range tagList {
-		if v.IsExist() {
-			tags = append(tags, *v.Val())
-		}
+	// 填充数据
+	for _, model := range models {
+		res[model.ID] = util.NewValue(true, &model)
 	}
 
-	avatarURL, err := r.GetUserAvatarURL(ctx, model.AvatarID)
-	if err != nil {
-		return
-	}
-
-	return util.NewValue(true, &biz.UserInfo{
-		ID:        model.ID,
-		AccountID: model.AccountID,
-		Username:  model.Username,
-		Bio:       model.Bio,
-		Tags:      tags,
-		AvatarUrl: avatarURL,
-	}), nil
+	return res, nil
 }
 
 // dbGetUserByAccountID 在数据库中通过账户ID获取用户
@@ -231,7 +277,7 @@ func (r *userRepo) dbCreateUser(
 
 // cacheGetUserByAccountID 在缓存中通过账户ID获取用户信息
 func (r *userRepo) cacheGetUserByAccountID(
-	ctx context.Context, accountID uint32) (user util.Val[*biz.UserInfo], err error) {
+	ctx context.Context, accountID uint32) (info util.Val[*biz.UserInfo], err error) {
 
 	// 从缓存中使用account-id获取user-id
 	userStrID, ok, err := r.data.rdb.GetString(ctx, userIndexByAccountIDCacheKey(accountID))
@@ -248,28 +294,77 @@ func (r *userRepo) cacheGetUserByAccountID(
 		return
 	}
 
-	return r.cacheGetUser(ctx, userID)
-}
-
-// cacheGetUser 在缓存中通过用户id获取用户信息
-func (r *userRepo) cacheGetUser(ctx context.Context, userID uint32) (user util.Val[*biz.UserInfo], err error) {
-	var cache UserCache
-	ok, err := r.data.rdb.Get(ctx, userCacheKey(userID), &cache)
+	res, err := r.cacheGetUser(ctx, userID)
 	if err != nil {
 		return
 	}
+	info, ok = res[userID]
 	if !ok {
+		// TODO 没有对应用户id的数据，这不应该发生，这样应该触发错误
+	}
+	return info, nil
+}
+
+// cacheGetUser 在缓存中通过用户id获取用户信息
+func (r *userRepo) cacheGetUser(
+	ctx context.Context, userID ...uint32) (user map[uint32]util.Val[*biz.UserInfo], err error) {
+
+	length := len(userID)
+	pipe := r.data.rdb.Client.Pipeline()
+	cmds := make(map[uint32]*redis.StringCmd, length)
+	for _, id := range userID {
+		cmds[id] = pipe.Get(ctx, userCacheKey(id))
+	}
+
+	_, err = pipe.Exec(ctx)
+	if err != nil {
 		return
 	}
 
-	return util.NewValue(true, &biz.UserInfo{
-		ID:        cache.ID,
-		AccountID: cache.AccountID,
-		Username:  cache.Username,
-		Bio:       cache.Bio,
-		Tags:      cache.Tags,
-		AvatarUrl: cache.AvatarUrl,
-	}), nil
+	caches := make([]util.Val[UserCache], length, length)
+	for id, cmd := range cmds {
+		// 判断返回是空
+		if cmd.Err() == redis.Nil {
+			caches[id] = util.NewValue[UserCache](false, UserCache{})
+			continue
+		}
+
+		// 这里不应该发生错误，应该在Exec时返回错误
+		if cmd.Err() != nil {
+			return nil, cmd.Err()
+		}
+
+		v, err := cmd.Result()
+		if err != nil {
+			return nil, err
+		}
+
+		var info UserCache
+		info = UserCache{}
+		err = json.Unmarshal([]byte(v), &info)
+		if err != nil {
+			return nil, err
+		}
+		caches[id] = util.NewValue[UserCache](false, info)
+	}
+
+	res := make(map[uint32]util.Val[*biz.UserInfo], length)
+	for i, v := range caches {
+		if v.IsExist() {
+			cache := v.Val()
+			res[cache.ID] = util.NewValue(true, &biz.UserInfo{
+				ID:        cache.ID,
+				AccountID: cache.AccountID,
+				Username:  cache.Username,
+				Bio:       cache.Bio,
+				Tags:      cache.Tags,
+				AvatarUrl: cache.AvatarUrl,
+			})
+		} else {
+			res[userID[i]] = util.NewValue[*biz.UserInfo](false, nil)
+		}
+	}
+	return res, nil
 }
 
 // cacheSetUser 在缓存中保存用户信息

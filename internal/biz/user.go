@@ -63,17 +63,42 @@ func (uc *UserUseCase) CreateUser(ctx context.Context, accountID uint32) (userIn
 }
 
 // GetUserInfoByUserID 根据用户ID获取用户信息
-func (uc *UserUseCase) GetUserInfoByUserID(ctx context.Context, userID uint32) (userInfo *UserInfo, err error) {
+func (uc *UserUseCase) GetUserInfoByUserID(ctx context.Context, userID uint32) (info *UserInfo, err error) {
 	v, err := uc.repo.GetUserInfoByUserID(ctx, userID)
-	// TODO error
-	if v.IsExist() {
-		userInfo = v.Val()
+	if err != nil {
+		// TODO 打印，处理错误
+		return nil, errors.New("todo")
+	}
+
+	// 没有数据
+	if _, ok := v[userID]; !ok {
+		// TODO 打印，处理错误
+		return nil, errors.New("todo")
+	}
+	if v[userID].IsExist() {
+		info = v[userID].Val()
 	}
 	return
 }
 
 // GetMultipleUsersInfo 根据用户id列表批量获取用户信息
-func (uc *UserUseCase) GetMultipleUsersInfo(ctx context.Context, ids []uint32) (usersInfo []*UserInfo, err error) {
+// 不存在的id返回nil
+func (uc *UserUseCase) GetMultipleUsersInfo(ctx context.Context, ids []uint32) (info map[uint32]*UserInfo, err error) {
+	values, err := uc.repo.GetUserInfoByUserID(ctx, ids...)
+	if err != nil {
+		// TODO 打印，处理错误
+		return nil, errors.New("todo")
+	}
+
+	info = make(map[uint32]*UserInfo, len(values))
+	for id, v := range values {
+		if v.IsExist() {
+			info[id] = v.Val()
+		} else {
+			info[id] = nil
+		}
+	}
+
 	return nil, errors.New("todo")
 }
 
@@ -104,9 +129,13 @@ func (uc *UserUseCase) GetUserTagList(ctx context.Context, userID uint32) (tags 
 	return
 }
 
-// GetUploadURL 获取头像上传链接
-func (uc UserUseCase) GetUploadURL(ctx context.Context, userID uint32, crc32 string, sha1 string) (url string, err error) {
-	return "", errors.New("todo")
+// GetUploadAvatarURL 获取头像上传链接
+func (uc UserUseCase) GetUploadAvatarURL(ctx context.Context, userID uint32, crc32 string, sha1 string) (url string, err error) {
+	url, err = uc.repo.GetUploadAvatarURL(ctx, userID, crc32, sha1)
+	if err != nil {
+		return "", err
+	}
+	return
 }
 
 func (uc *UserUseCase) BanUser(ctx context.Context, userID uint32) error {

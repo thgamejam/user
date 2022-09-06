@@ -21,7 +21,7 @@ type UserRepo interface {
 	GetUserInfoByAccountID(ctx context.Context, accountID uint32) (user util.Val[*UserInfo], err error)
 
 	// GetUserInfoByUserID 通过用户ID获取用户信息
-	GetUserInfoByUserID(ctx context.Context, userID uint32) (user util.Val[*UserInfo], err error)
+	GetUserInfoByUserID(ctx context.Context, userID ...uint32) (user map[uint32]util.Val[*UserInfo], err error)
 
 	// GetUserOwnTags 获取用户所有标签
 	GetUserOwnTags(ctx context.Context, userID uint32) (tags []uint16, err error)
