@@ -58,7 +58,7 @@ func (r *userRepo) GetUserInfoByUserID(
 		// 获取标签内容
 		tagList, err := r.GetMultipleEnumTagContent(ctx, model.DisplayTag1, model.DisplayTag2, model.DisplayTag3)
 		if err != nil {
-			return
+			return res, err
 		}
 		// 清除不存在的标签id
 		tags := make([]string, 0, 3)
