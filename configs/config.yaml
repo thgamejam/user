@@ -29,5 +29,5 @@ data:
 
 user:
   default_username_prefix: "thjam_"
-  default_user_avatar_key: "default-user-avatar.webp"
+  default_user_avatar_url: "http://localhost:9000/default/default-user-avatar.webp"
   user_avatar_bucket_name: "user-avatar"
