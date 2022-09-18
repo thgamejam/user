@@ -65,18 +65,18 @@ type TagLocalCache struct {
 
 // Relationship 关系映射模型
 type Relationship struct {
-	Userid       uint32 `json:"userid" gorm:"column:userid"`
+	UserID       uint32 `json:"user_id" gorm:"column:user_id; index"`
 	FollowUserid uint32 `json:"followUserid" gorm:"column:follow_userid"`
 	database.Model
 }
 
 func (Relationship) TableName() string {
-	return "relationship"
+	return "user_relationship"
 }
 
 // UserFollowInfo 用户关注信息模型
 type UserFollowInfo struct {
-	Userid      uint32 `json:"userid" gorm:"column:userid"`
+	UserID      uint32 `json:"user_id" gorm:"column:user_id; index"`
 	FansCount   uint32 `json:"fansCount" gorm:"column:fans_count"`
 	FollowCount uint32 `json:"followCount" gorm:"column:follow_count"`
 	database.Model

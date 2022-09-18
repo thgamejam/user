@@ -38,7 +38,7 @@ func (r *userRepo) AddUserFollowInfo(ctx context.Context, userid uint32, followU
 	}
 
 	model := Relationship{
-		Userid:       userid,
+		UserID:       userid,
 		FollowUserid: followUserId,
 	}
 	// 开启事物增加信息
@@ -55,7 +55,7 @@ func (r *userRepo) AddUserFollowInfo(ctx context.Context, userid uint32, followU
 		return err
 	}
 	_ = r.data.rdb.Set(ctx, userFollowCacheKey(userid), &UserFollowInfo{
-		Userid:      userid,
+		UserID:      userid,
 		FansCount:   fansC,
 		FollowCount: followC + 1,
 	}, 0)
@@ -80,7 +80,7 @@ func (r *userRepo) DeleteUserFollowInfo(ctx context.Context, userid uint32, foll
 	}
 
 	model := Relationship{
-		Userid:       userid,
+		UserID:       userid,
 		FollowUserid: followUserId,
 	}
 	// 开启事物增加信息
@@ -97,7 +97,7 @@ func (r *userRepo) DeleteUserFollowInfo(ctx context.Context, userid uint32, foll
 		return err
 	}
 	_ = r.data.rdb.Set(ctx, userFollowCacheKey(userid), &UserFollowInfo{
-		Userid:      userid,
+		UserID:      userid,
 		FansCount:   fansC - 1,
 		FollowCount: followC,
 	}, 0)
@@ -126,7 +126,7 @@ func (r *userRepo) GetUserFollowInfo(ctx context.Context, userid uint32) (follow
 	// 数据不存在则创建用户数据信息
 	if tx.RowsAffected == 0 {
 		r.data.sql.Create(UserFollowInfo{
-			Userid:      userid,
+			UserID:      userid,
 			FansCount:   0,
 			FollowCount: 0,
 		})

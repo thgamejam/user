@@ -1,7 +1,6 @@
 use touhou_gamejam;
 
-create table user
-(
+create table user (
     id                int unsigned auto_increment primary key,
     account_id        int unsigned     not null comment '账户id索引',
     uname             varchar(16)      not null comment '用户名',
@@ -21,8 +20,8 @@ alter table user
 
 create unique index idx_user_account ON user (account_id);
 
-create table user_tag_relational
-(
+
+create table user_tag_relational (
     id          int unsigned auto_increment primary key,
     user_id     int unsigned     not null comment '用户id',
     user_tag_id tinyint unsigned not null default 0 comment '用户标签索引',
@@ -33,8 +32,8 @@ create table user_tag_relational
 
 create index user_tag_relational_user_id_index on user_tag_relational (user_id);
 
-create table user_tag_enum
-(
+
+create table user_tag_enum (
     id      tinyint unsigned auto_increment primary key,
     content varchar(8) not null default '' comment '标签内容',
     ctime   datetime   not null comment '创建时间',
@@ -46,19 +45,25 @@ alter table user_tag_enum
 
 create unique index idx_user_tag_enum_content ON user_tag_enum (content);
 
-create table relationship (
-    id              int unsigned        auto_increment  primary key,
-    userid          int                 not null                comment '用户id',
-    follow_userid   int                 not null                comment '被关注用户id',
-    ctime           datetime            not null                comment '创建时间',
-    mtime           datetime            not null                comment '修改时间'
+
+create table user_relationship (
+    id            int unsigned auto_increment primary key,
+    user_id       int      not null comment '用户id',
+    follow_userid int      not null comment '被关注用户id',
+    ctime         datetime not null comment '创建时间',
+    mtime         datetime not null comment '修改时间'
 );
 
+create index user_relationship_user_id_index on user_relationship (user_id);
+
+
 create table user_follow_info (
-    id              int unsigned        auto_increment          primary key ,
-    userid          int                 not null                comment '用户id',
-    fans_count      int                 not null    default 0   comment '粉丝数量',
-    follow_count    int                 not null    default 0   comment '关注数量',
-    ctime           datetime            not null                comment '创建时间',
-    mtime           datetime            not null                comment '修改时间'
-)
+    id           int unsigned auto_increment primary key,
+    user_id      int      not null comment '用户id',
+    fans_count   int      not null default 0 comment '粉丝数量',
+    follow_count int      not null default 0 comment '关注数量',
+    ctime        datetime not null comment '创建时间',
+    mtime        datetime not null comment '修改时间'
+);
+
+create index user_follow_info_user_id_index on user_follow_info (user_id);
