@@ -51,7 +51,7 @@ func NewData(confData *conf.Data, confUser *conf.User, logger log.Logger) (*Data
 		return nil, nil, err
 	}
 	if !ok {
-		err := data.oss.CreateBucket(ctx, confUser.DefaultUserAvatarKey)
+		err := data.oss.CreateBucket(ctx, confUser.UserAvatarBucketName)
 		if err != nil {
 			return nil, nil, err
 		}
