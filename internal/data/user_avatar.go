@@ -11,8 +11,6 @@ import (
 
 const fileSuffix = ".webp"
 
-var _defaultUserAvatarURL string
-
 // GetUploadAvatarURL 获取头像上传链接
 func (r *userRepo) GetUploadAvatarURL(ctx context.Context, userID uint32, crc32 string, sha1 string) (url string, err error) {
 	var claims authentication.UploadFileClaims
@@ -50,21 +48,5 @@ func (r *userRepo) GetUserAvatarURL(ctx context.Context, avatarID uint32) (strin
 
 // GetDefaultUserAvatarURL 获取默认用户头像连接
 func (r *userRepo) GetDefaultUserAvatarURL() string {
-	return _defaultUserAvatarURL
-}
-
-// renewDefaultUserAvatarURL 重置默认用户头像url
-func (r *userRepo) renewDefaultUserAvatarURL(ctx context.Context) (err error) {
-	url, err := r.data.oss.PreSignGetURL(ctx,
-		r.conf.UserAvatarBucketName,
-		r.conf.DefaultUserAvatarKey,
-		r.conf.DefaultUserAvatarKey,
-		-1,
-	)
-	if err != nil {
-		r.log.Errorf("GetUserAvatarURL - OSS.PreSignGetURL(r.conf.DefaultUserAvatarKey) - err=%v", err)
-		return
-	}
-	_defaultUserAvatarURL = url.String()
-	return
+	return r.conf.DefaultUserAvatarUrl
 }

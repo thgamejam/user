@@ -35,7 +35,7 @@ message User {
   // 默认用户名前缀
   string default_username_prefix = 1;
   // 默认用户头像
-  string default_user_avatar_key = 2;
+  string default_user_avatar_url = 2;
   // 用户头像桶名称
   string user_avatar_bucket_name = 3;
   // UploadFile 服务的密钥

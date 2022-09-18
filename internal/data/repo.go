@@ -32,11 +32,5 @@ func NewUserRepo(conf *conf.User, data *Data, logger log.Logger) (biz.UserRepo, 
 		return nil, err
 	}
 
-	// 生成默认用户头像url
-	err = r.renewDefaultUserAvatarURL(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	return r, nil
 }
