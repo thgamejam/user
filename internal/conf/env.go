@@ -6,6 +6,9 @@ import (
 )
 
 type Env struct {
+	// 服务ID
+	ID string
+
 	// ConsulURL consul的url, 例如: "http://0.0.0.0:8500"
 	ConsulURL string
 	// ConsulDatacenter 使用的consul数据中心, 例如: "dev"
@@ -17,19 +20,28 @@ type Env struct {
 	ConfigDirectory string
 }
 
-var env Env = Env{
+var env Env = Env{}
+
+func InitEnvDefaultValue() {
 	// 添加默认值
-	ConsulURL:           "http://0.0.0.0:8500",
-	ConsulDatacenter:    "dev",
-	ConsulConfDirectory: "thjam.user.service/dev/",
-	ConfigDirectory:     "../configs",
+	env.ID, _ = os.Hostname()
+	env.ConsulURL = "http://0.0.0.0:8500"
+	env.ConsulDatacenter = "dev"
+	env.ConsulConfDirectory = "thjam.user.service/dev/"
+	env.ConfigDirectory = "../configs"
 }
 
 func InitEnv() {
+	InitEnvDefaultValue()
+
 	flag.StringVar(&env.ConfigDirectory, "conf", "../configs", "配置路径，例如：-conf config.yaml")
 	flag.Parse()
 
 	// 环境变量覆盖输入参数
+	_id := os.Getenv("SERVICE_ID")
+	if _id != "" {
+		env.ID = _id
+	}
 	_consulURL := os.Getenv("CONSUL_URL")
 	if _consulURL != "" {
 		env.ConsulURL = _consulURL

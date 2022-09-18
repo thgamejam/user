@@ -129,10 +129,12 @@ build:
 	@mv ./bin/cmd ./bin/server
 
 .PHONY: run
+HOSTNAME = $(shell uname -n)
+TIME = $(shell date "+%Y%m%d%H%M%S")
 # 运行
 run:
 	@echo '运行项目...'
-	@mkdir -p bin/ && cd bin/ && go run -ldflags "-X main.Version=$(VERSION)" ./../...
+	@cd cmd && SERVICE_ID=$(HOSTNAME)-$(TIME) go run -ldflags "-X main.Version=$(VERSION)" ./../...
 
 .PHONY: docker
 # 构建docker镜像

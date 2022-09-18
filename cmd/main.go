@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"strings"
-	"time"
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
@@ -24,13 +23,11 @@ var (
 	Name string = "thjam.user.service"
 	// Version is the version of the compiled software.
 	Version string
-
-	id string
 )
 
 func newApp(logger log.Logger, rr registry.Registrar, hs *http.Server, gs *grpc.Server) *kratos.App {
 	return kratos.New(
-		kratos.ID(id),
+		kratos.ID(conf.GetEnv().ID),
 		kratos.Name(Name),
 		kratos.Version(Version),
 		kratos.Metadata(map[string]string{}),
@@ -44,15 +41,12 @@ func newApp(logger log.Logger, rr registry.Registrar, hs *http.Server, gs *grpc.
 }
 
 func main() {
-	id, _ = os.Hostname()
-	id += "_" + time.Now().Format("20060102150405")
-
 	conf.InitEnv()
 
 	logger := log.With(log.NewStdLogger(os.Stdout),
 		"ts", log.DefaultTimestamp,
 		"caller", log.DefaultCaller,
-		"service.id", id,
+		"service.id", conf.GetEnv().ID,
 		"service.name", Name,
 		"service.version", Version,
 		//"trace.id", tracing.TraceID(),
